@@ -9,6 +9,12 @@
 #define debugging
 #endif
 
+#ifdef debugging
+	#define serialPrint 1
+#else
+	#define serialPrint 0
+#endif
+
 module rssiLocationC {
 	uses {
 		interface Boot;
@@ -31,13 +37,10 @@ module rssiLocationC {
 }
 
 implementation {
-	// Radio Queue implementation if required // to be ananlyzed later
 
 	message_t* receiveMsg;
 	RssiMsg* msgPayload;
 
-	// task void radioSendTask(); // Send Packet on Radio Interface - broadcast to all beacons
-	
 	/* Helper functions */
 	void failBlink() { // If a packet Reception over Radio fails, Led2 is toggled
 		call Leds.led2Toggle();
@@ -51,7 +54,18 @@ implementation {
     	return (uint16_t) call CC2420Packet.getRssi(msg);
   	}
 
-  	/* event handlers */
+  	#define debug(fmt, args...) \		
+            do { if (serialPrint) { printf(fmt, ##args); printfflush();} } while (0)
+	/* tasks for processng */
+	// task void radioSendTask(); // Send Packet on Radio Interface - broadcast to all beacons
+
+  	// task void distFromRssi(int16_t rssi, am_addr_t dest) {
+
+  		
+  	// }
+
+
+	/* event handlers */
 	event void Boot.booted() {
 		call RadioControl.start();
 	}   
@@ -59,10 +73,7 @@ implementation {
 	event void RadioControl.startDone(error_t error) {
 		if (error == SUCCESS) {
 			successBlink();
-			#ifdef debugging
-			printf("Radio startDone\n");
-			printfflush();
-			#endif
+			debug("Radio startDone\n");
 		}
 	}
   
@@ -73,10 +84,7 @@ implementation {
 		if (len == sizeof(RssiMsg)) {
 			msgPayload = (RssiMsg*)payload;
 			msgPayload->rssi = getRssi(msg);
-			#ifdef debugging
-			printf("Rssi = %d\n",msgPayload->rssi);
-			printfflush();
-			#endif
+			debug("Rssi = %d\n",msgPayload->rssi);
 		}
 		return msg;
   }
