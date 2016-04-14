@@ -1,9 +1,5 @@
-#ifndef NEW_PRINTF_SEMANTICS
-#define NEW_PRINTF_SEMANTICS
-#endif
-#include "printf.h"
-
-#include "message.h"
+#include "debug.h"
+// #include "message.h"
 
 
 configuration rssiLocationAppC {
@@ -27,7 +23,7 @@ configuration rssiLocationAppC {
 	// App.RadioSend -> Radio;
 	App.RadioReceive -> Radio.Receive;
 	// App.RadioPacket -> Radio;
- 	// App.RadioAMPacket -> Radio;
+ 	App.RadioAMPacket -> Radio;
 
  	App.CC2420Packet -> CC2420ActiveMessageC.CC2420Packet;
 

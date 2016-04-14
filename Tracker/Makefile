@@ -1,16 +1,19 @@
 COMPONENT=rssiLocationAppC
+
+CC2420_CHANNEL=25
+
 #PRINTF 
 CFLAGS += -I$(TOSDIR)/lib/printf
 CFLAGS += -DNEW_PRINTF_SEMANTICS
 #Copied From InterceptBae
 CFLAGS += -DCC2420_NO_ACKNOWLEDGEMENTS
 CFLAGS += -DCC2420_NO_ADDRESS_RECOGNITION
+
 #RSSI-Base
-# INCLUDES= -I..               \
-#           -I../InterceptBase
+INCLUDES= -I..               
+CFLAGS += $(INCLUDES)
 
-# CFLAGS += $(INCLUDES)
-
+#used in for reading RSSI value
 ifneq ($(filter iris,$(MAKECMDGOALS)),) 
 	CFLAGS += -DRF230_RSSI_ENERGY
 endif
