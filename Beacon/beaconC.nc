@@ -74,7 +74,7 @@ module beaconC{
 	}
 	
 	event void BeaconTimer.fired() {
-		if (counter < TOS_NODE_ID*5 && counter >= (TOS_NODE_ID - 1)*5) { 
+		if (counter < TOS_NODE_ID*RSSI_REPEAT && counter >= (TOS_NODE_ID - 1)*RSSI_REPEAT) { 
 			// send Coord
   			call Packet.setPayloadLength(&RSSImsg,sizeof(BeaconMsg));
   			payloadPtr = call Packet.getPayload(&RSSImsg,sizeof(BeaconMsg));
@@ -86,7 +86,7 @@ module beaconC{
 		}
 		counter++;
 
-		if (counter==MAX_TOS_BEACON*5){
+		if (counter==MAX_TOS_BEACON*RSSI_REPEAT){
 			call BeaconTimer.stop();
 			counter = 0;
 		}
