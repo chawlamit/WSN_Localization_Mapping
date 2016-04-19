@@ -1,61 +1,9 @@
-// $Id: BaseStationP.nc,v 1.12 2010-06-29 22:07:14 scipio Exp $
-
-/*									tab:4
- * Copyright (c) 2000-2005 The Regents of the University  of California.  
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * - Redistributions of source code must retain the above copyright
- *   notice, this list of conditions and the following disclaimer.
- * - Redistributions in binary form must reproduce the above copyright
- *   notice, this list of conditions and the following disclaimer in the
- *   documentation and/or other materials provided with the
- *   distribution.
- * - Neither the name of the University of California nor the names of
- *   its contributors may be used to endorse or promote products derived
- *   from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
- * THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Copyright (c) 2002-2005 Intel Corporation
- * All rights reserved.
- *
- * This file is distributed under the terms in the attached INTEL-LICENSE     
- * file. If you do not find these files, copies can be found by writing to
- * Intel Research Berkeley, 2150 Shattuck Avenue, Suite 1300, Berkeley, CA, 
- * 94704.  Attention:  Intel License Inquiry.
- */
-
-/*
- * @author Phil Buonadonna
- * @author Gilman Tolle
- * @author David Gay
- * Revision:	$Id: BaseStationP.nc,v 1.12 2010-06-29 22:07:14 scipio Exp $
- */
-  
-/* 
- * BaseStationP bridges packets between a serial channel and the radio.
- * Messages moving from serial to radio will be tagged with the group
- * ID compiled into the BaseStation, and messages moving from radio to
- * serial will be filtered by that same group id.
- */
-
 #include "AM.h"
+#include "RSSI.h"
 #include "Serial.h"
+#define X 250
+#define Y 1000
+#define S 200000
 
 module BaseStationP @safe() {
   uses {
@@ -73,6 +21,12 @@ module BaseStationP @safe() {
     interface Receive as RadioSnoop[am_id_t id];
     interface Packet as RadioPacket;
     interface AMPacket as RadioAMPacket;
+
+    interface Timer<TMilli> as BaseTimer;
+    interface Timer<TMilli> as SleepTimer;
+
+    interface AMSend;
+    interface Packet;
 
     interface Leds;
   }
@@ -95,6 +49,11 @@ implementation
   uint8_t    radioIn, radioOut;
   bool       radioBusy, radioFull;
 
+  //Defining the message structures
+
+  message_t BS_StartStop;
+  BSMsg* payloadbuff;
+
   task void uartSendTask();
   task void radioSendTask();
 
@@ -104,6 +63,16 @@ implementation
 
   void failBlink() {
     call Leds.led2Toggle();
+  }
+
+  //Helper Functions
+
+	void failToggle() { // If a packet Reception over Radio fails, Led2 is toggled
+		call Leds.led2Toggle();
+	}
+
+  void successBlink() { 
+	   call Leds.led1Toggle();
   }
 
   event void Boot.booted() {
@@ -125,7 +94,10 @@ implementation
       radioFull = FALSE;
     if (call SerialControl.start() == EALREADY)
       uartFull = FALSE;
-  }
+
+    //Start of the Base timer
+    call BaseTimer.startOneShot(X);
+    }
 
   event void RadioControl.startDone(error_t error) {
     if (error == SUCCESS) {
@@ -156,6 +128,30 @@ implementation
 						    void *payload,
 						    uint8_t len) {
     return receive(msg, payload, len);
+  }
+
+  event void BaseTimer.fired() {
+    call Leds.led2Toggle();
+    call Packet.setPayloadLength(&BS_StartStop,sizeof(BSMsg));
+    payloadbuff = call Packet.getPayload(&BS_StartStop,sizeof(BSMsg));
+    payloadbuff->msg_type = START_MSG;
+    payloadbuff->sleepTime = 0;
+    call AMSend.send(AM_BROADCAST_ADDR, &BS_StartStop, sizeof(BSMsg));
+    radioBusy = TRUE;
+    successBlink();
+    call SleepTimer.startOneShot(Y);
+  }
+
+  event void SleepTimer.fired() {
+    call Leds.led2Toggle();
+    call Packet.setPayloadLength(&BS_StartStop,sizeof(BSMsg));
+    payloadbuff = call Packet.getPayload(&BS_StartStop,sizeof(BSMsg));
+    payloadbuff->msg_type = SLEEP_MSG;
+    payloadbuff->sleepTime = S;
+    call AMSend.send(AM_BROADCAST_ADDR, &BS_StartStop, sizeof(BSMsg));
+    radioBusy = TRUE;
+    successBlink();
+    call BaseTimer.startOneShot(X);
   }
 
   message_t* receive(message_t *msg, void *payload, uint8_t len) {
@@ -313,4 +309,14 @@ implementation
     
     post radioSendTask();
   }
+
+  event void AMSend.sendDone(message_t *m, error_t error){
+		if (error == SUCCESS) {
+			radioBusy = FALSE;
+			successBlink();
+		}
+		else {
+			failToggle();
+		}
+	}
 }  
