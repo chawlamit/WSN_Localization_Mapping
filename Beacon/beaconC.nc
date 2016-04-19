@@ -19,15 +19,13 @@ module beaconC{
 
 	    interface Receive;
 	
-	    interface PacketTimeStamp<TMilli,uint32_t>;
-	    interface TimeSyncPacket<TMilli,uint32_t>;
-	    interface TimeSyncAMSend<TMilli,uint32_t> as TimeAMSend;
-	    interface LocalTime<TMilli>;    
-
-
+	    // interface PacketTimeStamp<TMilli,uint32_t>;
+	    // interface TimeSyncPacket<TMilli,uint32_t>;
+	    // interface TimeSyncAMSend<TMilli,uint32_t> as TimeAMSend;
+	    // interface LocalTime<TMilli>;    
 	}
 } implementation {
-		message_t msg;
+		message_t RSSImsg;
 		BeaconMsg* payloadPtr;
 
 		uint8_t counter = 0;
@@ -60,38 +58,41 @@ module beaconC{
 		if (call AMPacket.source(msg) == BASE_STATION_ID) {
 			buf = (BSMsg*)payload;
 			if (buf->msg_type == START_MSG) {
-				Timer1.startOneShot(DELAY_INTERVAL_MS);
+				call DelayTimer.startOneShot(DELAY_INTERVAL_MS);
 			}
-			else if (buf->msg_type == END_MSG) {
+			else if (buf->msg_type == SLEEP_MSG) {
 				//TODO - Sleep Node
+				call SleepTimer.startOneShot(buf->sleepTime);
 			}
 		}
 
 		return msg;
 	}
 
-	event void DelayTimer.fired)() {
+	event void DelayTimer.fired() {
 		call BeaconTimer.startPeriodic(BEACON_SEND_INTERVAL_MS);
 	}
 	
-	event void BeaconTimer.fired)() {
-		if (counter < TOS_NODE_ID*5 && count >= (TOS_NODE_ID - 1)*5) { 
+	event void BeaconTimer.fired() {
+		if (counter < TOS_NODE_ID*5 && counter >= (TOS_NODE_ID - 1)*5) { 
 			// send Coord
-  			call Packet.setPayloadLength(&msg,sizeof(BeaconMsg));
-  			payloadPtr = Packet.getPayload(&msg,sizeof(BeaconMsg));
-  			payloadPtr->Coord.x = X;
-  			payloadPtr->Coord.y = Y;
-	  		call AMSend.send(AM_BROADCAST_ADDR, &msg, sizeof(BeaconMsg));
+  			call Packet.setPayloadLength(&RSSImsg,sizeof(BeaconMsg));
+  			payloadPtr = call Packet.getPayload(&RSSImsg,sizeof(BeaconMsg));
+  			payloadPtr->loc.x = X;
+  			payloadPtr->loc.y = Y;
+	  		call AMSend.send(AM_BROADCAST_ADDR, &RSSImsg, sizeof(BeaconMsg));
 	  		radioBusy = TRUE;
 	 	 	successBlink();
 		}
 		counter++;
 
 		if (counter==MAX_TOS_BEACON*5){
-			BeaconTimer.stop();
+			call BeaconTimer.stop();
 			counter = 0;
 		}
 	}
+
+	event void SleepTimer.fired() {}
 
 	event void AMSend.sendDone(message_t *m, error_t error){
 		if (error == SUCCESS) {
