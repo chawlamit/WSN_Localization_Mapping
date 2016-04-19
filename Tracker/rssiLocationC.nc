@@ -109,7 +109,7 @@ implementation {
 
 	event void RadioControl.startDone(error_t error) {
 		if (error == SUCCESS) {
-			successBlink();
+			call Leds.led1On();
 			debug("Radio startDone\n");
 		}
 	}
