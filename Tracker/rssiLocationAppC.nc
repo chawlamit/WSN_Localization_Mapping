@@ -9,6 +9,7 @@ configuration rssiLocationAppC {
 
 	components ActiveMessageC as Radio;
 	components new AMSenderC(AM_RSSIMSG) as RadioSender;
+	// components new AMReceiverC(AM_RSSIMSG) as RadioRecieve;
 	
 	components CC2420ActiveMessageC;
 
@@ -29,7 +30,7 @@ configuration rssiLocationAppC {
 	App.RadioControl -> Radio;
 
 	App.AMSend -> RadioSender;
-	App.Receive ->	Radio.Receive[AM_RSSIMSG];
+	App.RadioReceive ->	Radio.Receive;
 	App.Packet -> Radio;
  	App.AMPacket -> Radio;
 
