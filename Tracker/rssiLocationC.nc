@@ -29,7 +29,8 @@ module rssiLocationC {
 	    // interfaces used for sending and manipulating packets
 	    
 	    interface AMSend; //as AMSend;
-	    interface Receive;// as Receive;
+	    // interface Receive;// as Receive;
+	    interface Receive as RadioReceive[am_id_t id_r];
     	interface Packet;// as Packet;
     	interface AMPacket;// as AMPacket;
     	
@@ -172,6 +173,7 @@ implementation {
   															- (beacInfo[mini].loc.y - beacInfo[medi].loc.y)*(beacInfo[maxi].loc.x - beacInfo[medi].loc.x));
   		
   		currLoc.x = (va - currLoc.y*(beacInfo[mini].loc.y - beacInfo[medi].loc.y))/(beacInfo[mini].loc.x - beacInfo[medi].loc.x);
+  		debug("I am located @  %d , %d \n",currLoc.x,currLoc.y);
   	}
 
 	/* event handlers */
@@ -190,7 +192,7 @@ implementation {
   
 	event void RadioControl.stopDone(error_t error) {}
 
-	event message_t* Receive.receive ( message_t *msg, void *payload, uint8_t len ) {
+	event message_t* RadioReceive.receive[am_id_t id_r] ( message_t *msg, void *payload, uint8_t len ) {
 		BSMsg* buf;
 		am_addr_t id;
 
@@ -231,17 +233,19 @@ implementation {
 
   	event void DelayTimer1.fired() {
 		memset(&beacInfo, 0, sizeof(RssiStruct) * MAX_TOS_BEACON);
-		call BeaconTimer.startOneShot(BEACON_SEND_INTERVAL_MS * BEACON_SEND_INTERVAL_MS * RSSI_REPEAT);
+		call BeaconTimer.startOneShot((BEACON_SEND_INTERVAL_MS) * ( (MAX_TOS_BEACON * RSSI_REPEAT) +1 ) );
+		debug(" DelayTimer1 fired\n");
 	}
 	
 	event void BeaconTimer.fired() { 
-		call DelayTimer2.startOneShot(DELAY_INTERVAL_MS);
+		call DelayTimer2.startOneShot(DELAY_INTERVAL_MS2);
 		post distFromRssi();
+		debug("BeaconTimer fired\n");
 	}
 
 	event void DelayTimer2.fired() {
 		call TrackerTimer.startPeriodic(BEACON_SEND_INTERVAL_MS);
-
+		debug(" DelayTimer2 fired\n");
 	}
 
 	event void TrackerTimer.fired(){
@@ -254,6 +258,7 @@ implementation {
 	  		call AMSend.send(BASE_STATION_ID, &Tmsg, sizeof(TrackerMsg));
 	  		radioBusy = TRUE;
 	 	 	successBlink();
+	 	 	debug("My msg Sent %d\n",counter);
 		}
 		counter++;
 
@@ -261,6 +266,7 @@ implementation {
 			call TrackerTimer.stop();
 			counter = 0;
 		}
+		debug(" TrackerTimer fired %d\n",counter);
 
 	}	
 

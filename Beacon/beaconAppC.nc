@@ -31,6 +31,6 @@ configuration beaconAppC{
 	App.Packet -> Radio;
 	App.AMSend -> RadioSender;
 
-	App.Receive -> Radio.Receive[AM_RSSIMSG];
+	App.RadioReceive -> Radio.Receive;
 
 }
