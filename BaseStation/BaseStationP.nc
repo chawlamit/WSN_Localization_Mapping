@@ -1,9 +1,8 @@
 #include "AM.h"
 #include "RSSI.h"
 #include "Serial.h"
-#define X 250
-#define Y 1000
-#define S 200000
+#define S DELAY_INTERVAL_MS+BEACON_SEND_INTERVAL_MS*MAX_TOS_BEACON*RSSI_REPEAT+TRACKER_SEND_INTERVAL_MS*MAX_TOS_TRACKER+10000+10000
+#define X 10000
 
 module BaseStationP @safe() {
   uses {
@@ -137,9 +136,9 @@ implementation
     payloadbuff->msg_type = START_MSG;
     payloadbuff->sleepTime = 0;
     call AMSend.send(AM_BROADCAST_ADDR, &BS_StartStop, sizeof(BSMsg));
-    radioBusy = TRUE;
+    // radioBusy = TRUE;
     successBlink();
-    call SleepTimer.startOneShot(Y);
+    call SleepTimer.startOneShot(S);
   }
 
   event void SleepTimer.fired() {
@@ -149,7 +148,7 @@ implementation
     payloadbuff->msg_type = SLEEP_MSG;
     payloadbuff->sleepTime = S;
     call AMSend.send(AM_BROADCAST_ADDR, &BS_StartStop, sizeof(BSMsg));
-    radioBusy = TRUE;
+    // radioBusy = TRUE;
     successBlink();
     call BaseTimer.startOneShot(X);
   }
