@@ -50,7 +50,7 @@ typedef struct RssiStruct{
 	Coord loc;
 	uint16_t rssi[RSSI_REPEAT];
 	int rssiAvg;
-	double distance;
+	nx_float distance;
 }RssiStruct;
 
 

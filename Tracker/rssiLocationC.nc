@@ -7,10 +7,10 @@
 #include "math.h"
 
 // #define INT_MAX 200
-#define INT_MIN -300	
+#define INT_MIN -300    
 
-#define rssi_1m -50	// rssi value at 1m distance from the beacon. of the eqn. 
-#define	n 2.2 // pathloss exponent for free space
+#define rssi_1m -50 // rssi value at 1m distance from the beacon. of the eqn. 
+#define n 2.2 // pathloss exponent for free space
 
 
 
@@ -19,23 +19,23 @@ module rssiLocationC {
 		interface Boot;
 		interface Leds;
 		interface SplitControl as RadioControl;  // PROVIDED BY ActiveMessageC
-	    
+		
 		interface Timer<TMilli> as DelayTimer1; //for rssi msg slots
 		interface Timer<TMilli> as DelayTimer2; //for rssi msg slots
 		interface Timer<TMilli> as BeaconTimer;
 		interface Timer<TMilli> as TrackerTimer;
 		interface Timer<TMilli> as SleepTimer;
 
-	    // interfaces used for sending and manipulating packets
-	    
-	    interface AMSend; //as AMSend;
-	    // interface Receive;// as Receive;
-	    interface Receive as RadioReceive[am_id_t id_r];
-    	interface Packet;// as Packet;
-    	interface AMPacket;// as AMPacket;
-    	
-    	// used to get the rsi value of the packet
-    	interface CC2420Packet;
+		// interfaces used for sending and manipulating packets
+		
+		interface AMSend; //as AMSend;
+		// interface Receive;// as Receive;
+		interface Receive as RadioReceive[am_id_t id_r];
+		interface Packet;// as Packet;
+		interface AMPacket;// as AMPacket;
+		
+		// used to get the rsi value of the packet
+		interface CC2420Packet;
 
 
 	}
@@ -48,14 +48,14 @@ implementation {
 
 	BeaconMsg* msgPayload;
 	bool radioBusy;
-	uint8_t counter = 0;	
+	uint8_t counter = 0;    
 
 	RssiStruct beacInfo[MAX_TOS_BEACON+1];
 
-	uint8_t index = 0;	//used to store the index of recieved beacon signal
+	uint8_t index = 0;  //used to store the index of recieved beacon signal
 
 
-	am_addr_t prevBeaconId = 1;	
+	am_addr_t prevBeaconId = 1; 
 
 	Coord currLoc;
 
@@ -69,36 +69,36 @@ implementation {
 	}
 
 	uint16_t getRssi(message_t *msg){
-    	return (uint16_t) call CC2420Packet.getRssi(msg);
-  	}
+		return (uint16_t) call CC2420Packet.getRssi(msg);
+	}
 	
 	void printfFloat(float toBePrinted) {
-	     uint32_t fi, f0, f1, f2;
-	     char c;
-	     float f = toBePrinted;
+		 uint32_t fi, f0, f1, f2;
+		 char c;
+		 float f = toBePrinted;
 
-	     if (f<0){
-	       c = '-'; f = -f;
-	     } else {
-	       c = ' ';
-	     }
+		 if (f<0){
+		   c = '-'; f = -f;
+		 } else {
+		   c = ' ';
+		 }
 
-	     // integer portion.
-	     fi = (uint32_t) f;
+		 // integer portion.
+		 fi = (uint32_t) f;
 
-	     // decimal portion...get index for up to 3 decimal places.
-	     f = f - ((float) fi);
-	     f0 = f*10;   f0 %= 10;
-	     f1 = f*100;  f1 %= 10;
-	     f2 = f*1000; f2 %= 10;
-	     debug("%c%ld.%d%d%d", c, fi, (uint8_t) f0, (uint8_t) f1, (uint8_t) f2);
-	   	}
+		 // decimal portion...get index for up to 3 decimal places.
+		 f = f - ((float) fi);
+		 f0 = f*10;   f0 %= 10;
+		 f1 = f*100;  f1 %= 10;
+		 f2 = f*1000; f2 %= 10;
+		 debug("%c%ld.%d%d%d", c, fi, (uint8_t) f0, (uint8_t) f1, (uint8_t) f2);
+	}
 
 	void locate(int,int,int);
 
 
 	void calcDistance(int i) {
-		double log_x = (-1 * beacInfo[i].rssiAvg + rssi_1m)/(10.0 * n);
+		float log_x = (-1 * beacInfo[i].rssiAvg + rssi_1m)/(10.0 * n);
 		beacInfo[i].distance = powf(10,log_x);
 		debug("distance from beacon:%u is ",i);
 		printfFloat(beacInfo[i].distance);
@@ -150,7 +150,7 @@ implementation {
 						min = beacInfo[i].rssiAvg;
 
 					}
-				}	
+				}   
 			}
 		}
 
@@ -159,22 +159,25 @@ implementation {
 		calcDistance(minIndex);
 
 		locate(maxIndex,medIndex,minIndex);
-  	}
+	}
 
-  	void locate(int maxi, int medi, int mini){  
-  		double va = ( (beacInfo[medi].distance*beacInfo[medi].distance - beacInfo[mini].distance*beacInfo[mini].distance) 
-  					- (beacInfo[medi].loc.x*beacInfo[medi].loc.x - beacInfo[mini].loc.x*beacInfo[mini].loc.x) 
-  					- (beacInfo[medi].loc.y*beacInfo[medi].loc.y - beacInfo[mini].loc.y*beacInfo[mini].loc.y) ) / 2.0;
-  		double vb = ( (beacInfo[medi].distance*beacInfo[medi].distance - beacInfo[maxi].distance*beacInfo[maxi].distance) 
-  					- (beacInfo[medi].loc.x*beacInfo[medi].loc.x - beacInfo[maxi].loc.x*beacInfo[maxi].loc.x) 
-  					- (beacInfo[medi].loc.y*beacInfo[medi].loc.y - beacInfo[maxi].loc.y*beacInfo[maxi].loc.y) ) / 2.0;
-  		currLoc.y = (vb*(beacInfo[mini].loc.x - beacInfo[medi].loc.x) 
-  					- va*(beacInfo[maxi].loc.x - beacInfo[medi].loc.x))/((beacInfo[maxi].loc.y - beacInfo[medi].loc.y)*(beacInfo[mini].loc.x - beacInfo[medi].loc.x) 
-  															- (beacInfo[mini].loc.y - beacInfo[medi].loc.y)*(beacInfo[maxi].loc.x - beacInfo[medi].loc.x));
-  		
-  		currLoc.x = (va - currLoc.y*(beacInfo[mini].loc.y - beacInfo[medi].loc.y))/(beacInfo[mini].loc.x - beacInfo[medi].loc.x);
-  		debug("I am located @  %d , %d \n",currLoc.x,currLoc.y);
-  	}
+	void locate(int maxi, int medi, int mini){  
+		float va = ( (beacInfo[medi].distance*beacInfo[medi].distance - beacInfo[mini].distance*beacInfo[mini].distance) 
+					- (beacInfo[medi].loc.x*beacInfo[medi].loc.x - beacInfo[mini].loc.x*beacInfo[mini].loc.x) 
+					- (beacInfo[medi].loc.y*beacInfo[medi].loc.y - beacInfo[mini].loc.y*beacInfo[mini].loc.y) ) / 2.0;
+		float vb = ( (beacInfo[medi].distance*beacInfo[medi].distance - beacInfo[maxi].distance*beacInfo[maxi].distance) 
+					- (beacInfo[medi].loc.x*beacInfo[medi].loc.x - beacInfo[maxi].loc.x*beacInfo[maxi].loc.x) 
+					- (beacInfo[medi].loc.y*beacInfo[medi].loc.y - beacInfo[maxi].loc.y*beacInfo[maxi].loc.y) ) / 2.0;
+		currLoc.y = (vb*(beacInfo[mini].loc.x - beacInfo[medi].loc.x) 
+					- va*(beacInfo[maxi].loc.x - beacInfo[medi].loc.x))/(((beacInfo[maxi].loc.y - beacInfo[medi].loc.y)*(beacInfo[mini].loc.x - beacInfo[medi].loc.x)) 
+															- ((beacInfo[mini].loc.y - beacInfo[medi].loc.y)*(beacInfo[maxi].loc.x - beacInfo[medi].loc.x)));
+		
+		currLoc.x = (va - currLoc.y*(beacInfo[mini].loc.y - beacInfo[medi].loc.y))/(beacInfo[mini].loc.x - beacInfo[medi].loc.x);
+		debug("I am located @");
+		printfFloat(currLoc.x);
+		printfFloat(currLoc.y);
+
+	}
 
 	/* event handlers */
 	event void Boot.booted() {
@@ -231,7 +234,7 @@ implementation {
 	}
 
 
-  	event void DelayTimer1.fired() {
+	event void DelayTimer1.fired() {
 		memset(&beacInfo, 0, sizeof(RssiStruct) * MAX_TOS_BEACON);
 		call BeaconTimer.startOneShot((BEACON_SEND_INTERVAL_MS) * ( (MAX_TOS_BEACON * RSSI_REPEAT) +1 ) );
 		debug(" DelayTimer1 fired\n");
@@ -251,14 +254,14 @@ implementation {
 	event void TrackerTimer.fired(){
 		if (counter == (TOS_NODE_ID - 10)) { 
 			// send Coord
-  			call Packet.setPayloadLength(&Tmsg,sizeof(TrackerMsg));
-  			payloadPtr = call Packet.getPayload(&Tmsg,sizeof(TrackerMsg));
-  			payloadPtr->loc.x = currLoc.x;
-  			payloadPtr->loc.y = currLoc.y;
-	  		call AMSend.send(BASE_STATION_ID, &Tmsg, sizeof(TrackerMsg));
-	  		radioBusy = TRUE;
-	 	 	successBlink();
-	 	 	debug("My msg Sent %d\n",counter);
+			call Packet.setPayloadLength(&Tmsg,sizeof(TrackerMsg));
+			payloadPtr = call Packet.getPayload(&Tmsg,sizeof(TrackerMsg));
+			payloadPtr->loc.x = currLoc.x;
+			payloadPtr->loc.y = currLoc.y;
+			call AMSend.send(BASE_STATION_ID, &Tmsg, sizeof(TrackerMsg));
+			radioBusy = TRUE;
+			successBlink();
+			debug("My msg Sent %d\n",counter);
 		}
 		counter++;
 
@@ -268,7 +271,7 @@ implementation {
 		}
 		debug(" TrackerTimer fired %d\n",counter);
 
-	}	
+	}   
 
 	event void SleepTimer.fired() {}
 
