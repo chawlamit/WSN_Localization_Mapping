@@ -9,7 +9,7 @@
 // #define INT_MAX 200
 #define INT_MIN -300    
 
-#define rssi_1m -50 // rssi value at 1m distance from the beacon. of the eqn. 
+#define rssi_1m -5 + RSSI_DB_CONVERSION // rssi value at 1m distance from the beacon. of the eqn. 
 #define n 2.2 // pathloss exponent for free space
 
 //Calibration Entities 
@@ -51,7 +51,8 @@ module rssiLocationC {
 implementation {
 	message_t Tmsg;
 	TrackerMsg* payloadPtr;
-
+	nx_uint8_t roomId_global;
+	nx_uint8_t quad_global;
 	BeaconMsg* msgPayload;
 	bool radioBusy;
 	uint8_t counter = 0;    
@@ -141,7 +142,7 @@ implementation {
 				}
 			}
 			beacInfo[i].rssiAvg = beacInfo[i].rssiAvg/countDiv;
-			if (beacInfo[i].rssiAvg >= max) {
+			if (beacInfo[i].rssiAvg >= max && beacInfo[i].rssiAvg!=0) {
 				min = med;
 				minIndex = medIndex;
 				
@@ -153,7 +154,7 @@ implementation {
 
 			}
 			else {
-				if (beacInfo[i].rssiAvg >= med ) {
+				if (beacInfo[i].rssiAvg >= med && beacInfo[i].rssiAvg!=0 ) {
 					min = med;
 					minIndex = medIndex;
 
@@ -161,7 +162,7 @@ implementation {
 					medIndex = i;
 				}
 				else {
-					if (beacInfo[i].rssiAvg >= min) {
+					if (beacInfo[i].rssiAvg >= min && beacInfo[i].rssiAvg!=0 ) {
 						minIndex = i;
 						min = beacInfo[i].rssiAvg;
 
@@ -169,12 +170,15 @@ implementation {
 				}   
 			}
 		}
+		roomId_global = beacInfo[maxIndex].roomId;
+		quad_global = beacInfo[maxIndex].quad;
+		debug("quad = %d",quad_global);
 
-		calcDistance(maxIndex);
-		calcDistance(medIndex);
-		calcDistance(minIndex);
+		// calcDistance(maxIndex);
+		// calcDistance(medIndex);
+		// calcDistance(minIndex);
 
-		locate(maxIndex,medIndex,minIndex);
+		// locate(maxIndex,medIndex,minIndex);
 	}
 
 	void locate(int maxi, int medi, int mini){  
@@ -235,6 +239,8 @@ implementation {
 			debug("Rssi : %d from beacon %u\n:",beacInfo[id].rssi[index],id);
 			beacInfo[id].loc.x = msgPayload->loc.x;
 			beacInfo[id].loc.x = msgPayload->loc.y;
+			beacInfo[id].roomId = msgPayload->roomId;
+			beacInfo[id].quad = msgPayload->quad;
 
 			if (id == prevBeaconId) {
 				index++; //= (index + 1) % RSSI_REPEAT;
@@ -274,6 +280,10 @@ implementation {
 			payloadPtr = call Packet.getPayload(&Tmsg,sizeof(TrackerMsg));
 			payloadPtr->loc.x = currLoc.x;
 			payloadPtr->loc.y = currLoc.y;
+			payloadPtr->nodeId = TOS_NODE_ID;
+			payloadPtr->roomId = roomId_global;
+			payloadPtr->quad = quad_global;
+
 			call AMSend.send(BASE_STATION_ID, &Tmsg, sizeof(TrackerMsg));
 			radioBusy = TRUE;
 			successBlink();

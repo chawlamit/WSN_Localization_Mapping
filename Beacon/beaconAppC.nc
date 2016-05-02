@@ -12,7 +12,7 @@ configuration beaconAppC{
 	
 	components ActiveMessageC as Radio;
 	
-	components new AMSenderC(AM_RSSIMSG) as RadioSender;
+	components new AMSenderC(AM_RSSI) as RadioSender;
 	
 	components beaconC as App;
 	

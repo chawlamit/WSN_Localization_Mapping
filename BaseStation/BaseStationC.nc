@@ -6,7 +6,7 @@ implementation {
 
   components new TimerMilliC() as BaseTimer;
   components new TimerMilliC() as SleepTimer;	
-  components new AMSenderC(AM_RSSIMSG) as RadioSender;
+  components new AMSenderC(AM_RSSI) as RadioSender;
   
   MainC.Boot <- BaseStationP;
 

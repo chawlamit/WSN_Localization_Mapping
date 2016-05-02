@@ -8,8 +8,8 @@ configuration rssiLocationAppC {
 	components MainC, LedsC; 
 
 	components ActiveMessageC as Radio;
-	components new AMSenderC(AM_RSSIMSG) as RadioSender;
-	// components new AMReceiverC(AM_RSSIMSG) as RadioRecieve;
+	components new AMSenderC(AM_TRACKERMSG) as RadioSender;
+	// components new AMReceiverC(AM_RSSI) as RadioRecieve;
 	
 	components CC2420ActiveMessageC;
 

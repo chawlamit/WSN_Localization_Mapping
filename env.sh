@@ -1,0 +1,1 @@
+export MOTECOM=serial@/dev/ttyUSB0:telosb

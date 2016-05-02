@@ -1,3 +1,5 @@
 build/**
 Tracker/build
 Beacon/build
+BaseStation/build
+BaseStation/*.class

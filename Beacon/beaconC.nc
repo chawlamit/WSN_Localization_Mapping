@@ -1,7 +1,9 @@
 #include "RSSI.h"
 #include "AM.h"
-#define X 3
-#define Y 3
+#define X 0
+#define Y 0
+#define QUAD 4
+#define ROOMID 1
 
 module beaconC{
 	uses {
@@ -89,6 +91,8 @@ module beaconC{
   			payloadPtr = call Packet.getPayload(&RSSImsg,sizeof(BeaconMsg));
   			payloadPtr->loc.x = X;
   			payloadPtr->loc.y = Y;
+  			payloadPtr->quad = QUAD;
+  			payloadPtr->roomId = ROOMID;
 	  		call AMSend.send(AM_BROADCAST_ADDR, &RSSImsg, sizeof(BeaconMsg));
 	  		radioBusy = TRUE;
 	 	 	successBlink();
