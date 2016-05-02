@@ -33,23 +33,23 @@ def data():
 	if request.method=='GET':
 
 		gID=int(request.args.get('groupID'))
-		print gID
+		# print gID
 		nID = int(request.args.get('nodeID'))
 		print nID
 		rNO = int(request.args.get('roomID'))
 		# rNO=rNO-1
-		print rNO
+		# print rNO
 		time = int(request.args.get('time'))
-		time = time_min(time)
-		print time
+		time = time_min(time+19800)
+		# print time
 		quadNO = int(request.args.get('quadNO'))
 		quadNO=quadNO-1
-		print quadNO
+		# print quadNO
 		global dataToDisplay
 		dataToDisplay = [['' for x in range(MaxQuadrants)] for y in range(MaxRooms)]
 		if (gID and nID and rNO and time and quadNO):
 			inputList[gID-1][nID]=(rNO,quadNO,time)
-			print inputList
+			# print inputList
 			
 			for i in range(len(inputList)):
 				for j in range(len(inputList[i])):
@@ -58,7 +58,7 @@ def data():
 						# print(inputList[i][j])
 						print "i:" +str(i)+ "j:" + str(j)
 						dataToDisplay[inputList[i][j][0] - 1][inputList[i][j][1]] += "<li>" + " Group ID:" + str(i+1) + " Node ID:" +str(j) + " Timestamp:" + str(inputList[i][j][2]) + "</li>"
-			print dataToDisplay
+			# print dataToDisplay
 
 			# dataToDisplay[rNO-1][quadNO-1]=(gID,nID,time)
 		return ("recieved data")
