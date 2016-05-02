@@ -35,7 +35,7 @@ def data():
 		gID=int(request.args.get('groupID'))
 		# print gID
 		nID = int(request.args.get('nodeID'))
-		print nID
+		# print nID
 		rNO = int(request.args.get('roomID'))
 		# rNO=rNO-1
 		# print rNO
