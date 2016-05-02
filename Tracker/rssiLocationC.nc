@@ -12,6 +12,12 @@
 #define rssi_1m -50 // rssi value at 1m distance from the beacon. of the eqn. 
 #define n 2.2 // pathloss exponent for free space
 
+//Calibration Entities 
+#define CAL_10 1.2
+#define CAL_20 2.4
+#define CAL_30 3.6
+#define CAL_40 4.8
+#define CAL_50 6.0
 
 
 module rssiLocationC {
@@ -98,8 +104,18 @@ implementation {
 
 
 	void calcDistance(int i) {
-		float log_x = (-1 * beacInfo[i].rssiAvg + rssi_1m)/(10.0 * n);
-		beacInfo[i].distance = powf(10,log_x);
+		if (-1*beacInfo[i].rssiAvg<=10)
+			beacInfo[i].distance = CAL_10;
+		else if (-1*beacInfo[i].rssiAvg<=20)
+			beacInfo[i].distance = CAL_20;
+		else if (-1*beacInfo[i].rssiAvg<=30)
+			beacInfo[i].distance = CAL_30;
+		else if (-1*beacInfo[i].rssiAvg<=40)
+			beacInfo[i].distance = CAL_40;
+		else 
+			beacInfo[i].distance = CAL_50;
+		//float log_x = (-1 * beacInfo[i].rssiAvg + rssi_1m)/(10.0 * n);
+		//beacInfo[i].distance = powf(10,log_x);
 		debug("distance from beacon:%u is ",i);
 		printfFloat(beacInfo[i].distance);
 		debug("\n");
